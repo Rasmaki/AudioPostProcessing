@@ -39,7 +39,7 @@ def amp_to_db(amplitude):
     index_array = np.zeros(3)
     db_data = np.zeros(len(amplitude))
     for i in range(len(amplitude)):
-        db_data[i] = 20*np.log10(abs(amplitude[i])/max_amp)
+        db_data[i] = 10*np.log10(abs(amplitude[i])/max_amp)
         if db_data[i] - 20 == 0:
             t_array[0] = abs(amplitude[i])
             index_array[0] = i
