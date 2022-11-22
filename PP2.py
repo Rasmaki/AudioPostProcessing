@@ -1,10 +1,8 @@
-# np.roll oder ähnlich für laufzeit
-# np.vstack().transpose()
-# np.power(10, dB-left-minus-right/20) für dB unterschiede n array_right = array/proportion
+
 # 1d) 50 ms verwischungsstelle
 import winsound
-
 import numpy as np
+import scipy
 from scipy.io.wavfile import read
 from scipy.io.wavfile import write
 
@@ -21,11 +19,35 @@ def detect_channels(unprocessed_data):
     return l_data, r_data
 
 
-def delay(l_data, r_data):
-    delayed_r = np.roll(r_data, 20)
-    stacked_data = np.asarray(list(zip(l_data, delayed_r)))
-    return stacked_data
+def delay(l_data, r_data, shift):
+    shift = shift * y / 1000
+    if shift < 0:
+        delayed_r = scipy.ndimage.shift(r_data, abs(shift), mode='constant')
+        return l_data, delayed_r
+    elif shift >= 0:
+        delayed_l = scipy.ndimage.shift(l_data, abs(shift), mode='constant')
+        return delayed_l, r_data
 
 
-write('Delayed_test.wav', 44100, delay(detect_channels(data)[0], detect_channels(data)[1]))
+def gain_diff(l_data, r_data, amp):
+    if amp < 0:
+        r_out = r_data * 10**(amp/20)
+        return l_data, r_out
+    elif amp >= 0:
+        l_out = l_data / (10**(amp/20))
+        return l_out, r_data
+
+
+def stack(ch_l, ch_r):
+    return np.asarray(list(zip(ch_l, ch_r)))
+
+
+ch_split = detect_channels(data)[0], detect_channels(data)[1]
+ch_delayed = delay(ch_split[0], ch_split[1], 4)
+ch_delayed_stacked = stack(ch_delayed[0], ch_delayed[1])
+ch_weak = gain_diff(ch_split[0], ch_split[1], -10)
+ch_weak_stacked = stack(ch_weak[0], ch_weak[1])
+
+
+write('Delayed_test.wav', 44100, ch_delayed_stacked)
 winsound.PlaySound("Delayed_test.wav", winsound.SND_FILENAME)
